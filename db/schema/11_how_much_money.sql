@@ -44,10 +44,9 @@ select to_char(b.m_start, 'YYYY-MM') as year_month,
 	   b.s_no as sum_no_commission,
    	   b.s_with as sum_with_commission,
        b.commission as commission,
-       lag(b.commission) over w as prev_commission,
-       b.commission - lag(b.commission) over w as commission_diff,
+       lag(b.commission) over (order by b.m_start) as prev_commission,
+       b.commission - lag(b.commission) over (order by b.m_start) as commission_diff,
        b.cpay as courier_pay,
        b.commission - b.cpay as net_profit
 from base b
-window w as (order by b.m_start)
 order by b.m_start;
