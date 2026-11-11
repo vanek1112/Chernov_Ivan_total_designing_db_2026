@@ -1,7 +1,18 @@
--- FOOD-109
+do $$
+begin
+    if not exists (select 1 from pg_roles where rolname = 'inspector') then
+        create role inspector login password 'NetoSQL2025';
+    else
+        alter role inspector login password 'NetoSQL2025';
+    end if;
+end
+$$ language plpgsql;
 
-create role inspector login password 'NetoSQL2025';
-grant connect on database postgres to inspector;
+do $$
+begin
+    execute 'grant connect on database ' || current_database() || ' to inspector';
+end
+$$ language plpgsql;
 
 grant all privileges on schema chernov_food to inspector;
 grant all privileges on all tables in schema chernov_food to inspector;
