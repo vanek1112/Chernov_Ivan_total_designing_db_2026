@@ -1,59 +1,33 @@
--- FOOD-106
-
-create or replace function chernov_food.get_statistic()
-returns table (
-    restaurant_name   varchar,
-    best_product_name varchar,
-    total_amount      numeric,
-    avg_amount        numeric,
-    best_user         varchar
-)
-language sql
-volatile
-as $$
-    with d as materialized (
-        select o.order_id, o.restaurant_id, o.client_id, o.total_amount
-        from chernov_food."order" o
-        where o.status = 'доставлен'
-    ),
-
-    by_client as (
-        select d.restaurant_id, c.login, count(*) as cnt, sum(d.total_amount) as amt
-        from d
-        join chernov_food.client c on c.client_id = d.client_id
-        group by d.restaurant_id, c.client_id
-    ),
-
-    rc as (
-        select bc.restaurant_id,
-               sum(bc.amt)  as amt,
-               sum(bc.cnt)  as cnt,
-               (array_agg(bc.login order by bc.cnt desc, random()))[1] as best_user
-        from by_client bc
-        group by bc.restaurant_id
-    ),
-
-    by_product as (
-        select d.restaurant_id, os.product_id, sum(os.quantity) as qty
-        from d
-        join chernov_food.order_structure os on os.order_id = d.order_id
-        group by d.restaurant_id, os.product_id
-    ),
-
-    rp as (
-        select bp.restaurant_id,
-               (array_agg(bp.product_id order by bp.qty desc, random()))[1] as product_id
-        from by_product bp
-        group by bp.restaurant_id
-    )
-    select r.restaurant_name,
-           p.product_name,
-           rc.amt,
-           rc.amt / rc.cnt,
-           rc.best_user
-    from rc
-    join chernov_food.restaurant r on r.restaurant_id = rc.restaurant_id
-    left join rp on rp.restaurant_id = rc.restaurant_id
-    left join chernov_food.product p on p.product_id = rp.product_id
-    order by r.restaurant_name;
-$$;
+create or replace function chernov_food.get_statistic() returns table (
+	restaurant_name varchar,
+	best_product_name varchar,
+	total_amount numeric,
+	avg_amount numeric,
+	best_user varchar
+) as $$
+begin
+	return query
+		select r.restaurant_name, bp.product_name, rs.sum_amount, rs.avg_check, bc.login
+		from (
+			select o.restaurant_id, sum(o.total_amount) as sum_amount, round(avg(o.total_amount), 2) as avg_check
+			from chernov_food."order" o
+			where o.status = 'доставлен'
+			group by o.restaurant_id) rs
+		join chernov_food.restaurant r on r.restaurant_id = rs.restaurant_id
+		left join (
+			select distinct on (p.restaurant_id) p.restaurant_id, p.product_name
+			from chernov_food."order" o
+			join chernov_food.order_structure os on os.order_id = o.order_id
+			join chernov_food.product p on p.product_id = os.product_id
+			where o.status = 'доставлен'
+			group by p.restaurant_id, p.product_id, p.product_name
+			order by p.restaurant_id, sum(os.quantity) desc, random()) bp on bp.restaurant_id = rs.restaurant_id
+		join (
+			select distinct on (o.restaurant_id) o.restaurant_id, c.login
+			from chernov_food."order" o
+			join chernov_food.client c on c.client_id = o.client_id
+			where o.status = 'доставлен'
+			group by o.restaurant_id, c.client_id, c.login
+			order by o.restaurant_id, count(*) desc, random()) bc on bc.restaurant_id = rs.restaurant_id;
+end;
+$$ language plpgsql;
