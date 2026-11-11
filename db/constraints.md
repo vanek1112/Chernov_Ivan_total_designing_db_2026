@@ -183,7 +183,6 @@
 | "order".`order_timestamp` | `localtimestamp` | BR-7.1, BR-11.2 | Время сервера. |
 | "order".`status` | `'создан'` | BR-7.7 | Начальный статус. |
 | "order".`pay_status` | `'ожидает'` | BR-7.9 | Платежей еще нет. |
-| "order".`description` | `'без комментариев'` | BR-11.3 | Вместо `NULL`: комментарий не входит в разрешенные `NULL`. |
 | payment.`payment_timestamp` | `localtimestamp` | BR-8.2, BR-11.2 | Время сервера. |
 | payment.`status` | `'в_обработке'` | BR-8.2 | Начальный статус попытки. |
 | review.`review_timestamp` | `localtimestamp` | BR-9.3, BR-11.2 | Время сервера. |
