@@ -20,7 +20,7 @@
 | `order_status` | `создан`, `готовится`, `в_доставке`, `доставлен`, `отменен` | BR-7.6, BR-7.7, BR-11.5 |
 | `order_pay_status` | `ожидает`, `оплачен`, `ошибка` | BR-7.8, BR-7.9, BR-8.7, BR-11.5 |
 | `payment_status` | `успех`, `ошибка`, `в_обработке` | BR-8.2, BR-11.5 |
-| `payment_type` | `карта`, `наличные`, `безнал` | BR-8.2, BR-8.6, BR-11.5 (значения BR не перечисляет, выбраны мной) |
+| `payment_type` | `карта`, `наличные`, `безнал` | BR-8.2, BR-8.6, BR-11.5 |
 | `review_entity_type` | `блюдо`, `ресторан`, `заказ` | BR-9.1, BR-11.5 |
 
 ## Ловушки 1–4
@@ -73,7 +73,7 @@
 | courier | `ck_courier_fio_not_blank` | `btrim(fio) <> ''` | BR-6.1, BR-11.4 | ФИО курьера обязательно. ФИО клиента нет (BR-2.6), это относится только к курьеру. |
 | courier | `ck_courier_phone_format` | как у клиента | BR-6.1, BR-11.6 | Единый формат телефона. |
 | courier | `ck_courier_dismissal_required` | если `status = 'уволен'`, то `dismissal_date IS NOT NULL` | BR-6.3 | Уволенный обязан иметь дату увольнения. |
-| courier | `ck_courier_dismissal_after_hire` | `dismissal_date IS NULL OR dismissal_date >= hire_date` | BR-6.1, BR-6.3 | Дата увольнения не раньше найма (расширение, см. «Нормализация / расширения»). |
+| courier | `ck_courier_dismissal_after_hire` | `dismissal_date IS NULL OR dismissal_date >= hire_date` | BR-6.1, BR-6.3 | Дата увольнения не раньше найма. |
 | courier | `ck_courier_coefficient_range` | `coefficient BETWEEN 0.1 AND 0.5` | BR-6.4 | Допустимые коэффициенты. |
 | courier_pay | `ck_courier_pay_year` | `year BETWEEN 2000 AND 2100` | BR-10.1, BR-10.3 | Выплата раз в месяц, год - часть ключа. Границы - защита от опечаток (BR-11.6). |
 | courier_pay | `ck_courier_pay_month` | `month BETWEEN 1 AND 12` | BR-10.1, BR-10.3 | Месяц - часть ключа. |
@@ -90,12 +90,12 @@
 | "order" | `ck_order_min_total` | `total_amount >= 1000` | BR-7.11, BR-1.8 | Минимальная сумма заказа. |
 | "order" | `ck_order_delivery_required` | если `status = 'доставлен'`, то `delivery_timestamp IS NOT NULL` | BR-7.12 | Время окончания доставки заполняется при статусе «доставлен». |
 | "order" | `ck_order_delivery_after_create` | `delivery_timestamp IS NULL OR delivery_timestamp >= order_timestamp` | BR-7.13 | Доставка не раньше создания. |
-| "order" | `ck_order_description_not_blank` | `btrim(description) <> ''` | BR-11.4 | Комментарий не должен быть пустой строкой. При отсутствии комментария - `DEFAULT`. |
+| "order" | `ck_order_description_not_blank` | `btrim(description) <> ''` | BR-11.4 | Комментарий не должен быть пустой строкой. При отсутствии комментария - `NULL`. |
 | payment | `ck_payment_amount_positive` | `amount > 0` | BR-8.4, BR-1.8 | Сумма попытки равна общей сумме заказа (больше либо равно 1000), нулевых платежей нет. |
 | order_structure | `ck_order_structure_quantity` | `quantity > 0` | BR-7.15 | Количество положительное, может быть дробным (`numeric(8,3)`). |
 | review | `ck_review_rating` | `rating BETWEEN 1 AND 5` | BR-9.4 | Оценка отзыва 1..5. Диапазон 0..5 у агрегатов (BR-4.2, BR-5.4) - другое правило. |
 | review | `ck_review_descr_not_blank` | `btrim(description) <> ''` | BR-9.3, BR-11.4 | Текст отзыва обязателен. |
-| review | `ck_review_photo_url` | `photo_url IS NULL OR photo_url ~* '^https?://'` | BR-9.3 | Фото необязательно, если есть - URL. |
+| review | `ck_review_photo_url` | `photo_url IS NULL OR photo_url ~* '^https?://'` | BR-9.3 | Фото необязательно. Если есть - URL, в противном случае - `NULL`. |
 
 ## UNIQUE
 
@@ -142,14 +142,12 @@
 
 ## NOT NULL (только бизнес-обязательные)
 
-PK и FK на `NOT NULL` не перечисляются. Остальное:
-
 | Таблица.столбец | BR | Обоснование |
 |---|---|---|
 | client: `login`, `password`, `phone_number` | BR-2.1, BR-11.4 | Все три атрибута обязательны. |
 | address: `street`, `house_number` | BR-3.1, BR-3.2 | Обязательны, необязательна только кв./офис. |
-| restaurant: `restaurant_name`, `description`, `company_details`, `work_start`, `work_end`, `status` | BR-4.1, BR-4.4, BR-4.5 | Перечислены в составе ресторана. |
-| courier: `fio`, `phone_number`, `status`, `hire_date`, `coefficient` | BR-6.1, BR-6.4, BR-6.5 | Поля курьера. Дата увольнения необязательна, см. NULL. |
+| restaurant: `restaurant_name`, `inn`, `kpp`, `orgn`, `work_start`, `work_end`, `status` | BR-4.1, BR-4.4, BR-4.5 | Перечислены в составе ресторана. |
+| courier: `first_name`, `last_name`, `middle_name`, `phone_number`, `status`, `hire_date`, `coefficient` | BR-6.1, BR-6.4, BR-6.5 | Поля курьера. Дата увольнения необязательна, см. NULL. |
 | product: `product_name`, `price`, `description`, `status` | BR-5.2, BR-5.3, BR-5.5 | Поля блюда. |
 | "order": `order_timestamp`, `order_amount`, `commission`, `total_amount`, `status`, `pay_status` | BR-7.1, BR-7.10 | Время создания и три суммы обязательны. |
 | payment: `payment_type`, `amount`, `transaction_id`, `payment_timestamp`, `status` | BR-8.2, BR-8.3 | Все атрибуты попытки обязательны. |
@@ -164,9 +162,11 @@ PK и FK на `NOT NULL` не перечисляются. Остальное:
 |---|---|---|
 | address.`apartment_office` | BR-3.2 | У частного дома нет квартиры или офиса. |
 | courier.`dismissal_date` | BR-6.3 | Заполняется только у уволенных. |
-| "order".`delivery_timestamp` | BR-7.12 | Заказ еще не доставлен. |
+| "order".`delivery_timestamp` | BR-7.12 | Заказ может быть еще не доставлен. |
+| "order".`description` | BR-7.1 | Из правила следует, что заказ оформляет сам клиент. Комментарий может и не добавить. |
 | product.`photo_url` | BR-5.6 | Фото необязательно. |
 | product.`rating` | BR-5.4, BR-9.7 | Нет отзывов, значит рейтинг `NULL`. |
+| restaurant.`description` | BR-4.1 | Правило напрямую не запрещает отсутствие описания. |
 | restaurant.`rating` | BR-4.1, BR-9.7 | Нет отзывов, значит рейтинг `NULL`. |
 | review.`photo_url` | BR-9.3 | Фото необязательно. |
 
@@ -194,8 +194,6 @@ PK и FK на `NOT NULL` не перечисляются. Остальное:
 
 ## Нормализация (3НФ)
 
-Дополнительных таблиц нет: итог 12 таблиц ERD + 0.
-
 | Таблица | Вывод |
 |---|---|
 | client | Все атрибуты зависят только от `client_id`. Логин и телефон - альтернативные ключи (BR-2.2). |
@@ -216,9 +214,3 @@ PK и FK на `NOT NULL` не перечисляются. Остальное:
 3. `payment.amount` повторяет `"order".total_amount`. Это не избыточность, а прямое требование BR-8.4. Расхождение исключено составным внешним ключом `fk_payment_order_amount`.
 4. `"order".pay_status` - сводка по таблице `payment` (BR-7.8, BR-8.7). Ее поддерживает триггер `trg_payment_sync_order_pay_status`.
 5. `review.entity_id` вместе с `entity_type` - полиморфная ссылка (BR-9.1). Это сознательное решение, причины описаны в ловушке 4.
-
-### Расширения (ограничения сверх явного текста BR)
-
-- `ck_courier_dismissal_after_hire` - логическое продолжение BR-6.3: дата увольнения не может быть раньше даты найма.
-- `ck_courier_pay_year` - защитные границы года, чтобы отсечь опечатки (BR-11.6).
-- Простой внешний ключ `fk_order_address` и составной `fk_order_client_address` существуют одновременно: первый взят из ERD, второй следует из BR-7.4. Составной строже и простому не противоречит.
