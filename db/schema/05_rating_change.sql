@@ -14,16 +14,14 @@ begin
 	set rating = (
 		select round(avg(r.rating), 2)
 		from chernov_food.review r
-		where r.entity_type = 'блюдо'
-			and r.entity_id = p.product_id)
+		where r.entity_type = 'блюдо' and r.entity_id = p.product_id)
 	where p.product_id in (old_id, new_id);
 
 	update chernov_food.restaurant rs
 	set rating = (
 		select round(avg(r.rating), 2)
 		from chernov_food.review r
-		where r.entity_type = 'ресторан'
-			and r.entity_id = rs.restaurant_id)
+		where r.entity_type = 'ресторан' and r.entity_id = rs.restaurant_id)
 	where rs.restaurant_id in (old_id, new_id);
 
 	return null;
