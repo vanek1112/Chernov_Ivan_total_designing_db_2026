@@ -2,8 +2,6 @@ do $$
 begin
     if not exists (select 1 from pg_roles where rolname = 'inspector') then
         create role inspector login password 'NetoSQL2025';
-    else
-        alter role inspector login password 'NetoSQL2025';
     end if;
 end
 $$ language plpgsql;
