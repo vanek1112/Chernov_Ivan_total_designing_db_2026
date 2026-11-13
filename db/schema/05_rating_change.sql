@@ -6,7 +6,7 @@ begin
 	if tg_op = 'INSERT' or tg_op = 'UPDATE' then
 		new_id = new.entity_id;
 	end if;
-	if tg_op = 'DELETE' or tg_op = 'UPDATE' then
+	if tg_op = 'DELETE' then
 		old_id = old.entity_id;
 	end if;
 
