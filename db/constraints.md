@@ -183,13 +183,11 @@
 | "order".`order_timestamp` | `localtimestamp` | BR-7.1, BR-11.2 | Время сервера. |
 | "order".`status` | `'создан'` | BR-7.7 | Начальный статус. |
 | "order".`pay_status` | `'ожидает'` | BR-7.9 | Платежей еще нет. |
+| "order".`comission` | `generated always as (round(order_amount * 0.10, 2)) stored` | BR-7.10 | Комиссия 10%. |
+| "order".`total_amount` | `generated always as (order_amount + round(order_amount * 0.10, 2))` | BR-7.10 | Общая сумма с комиссией. |
 | payment.`payment_timestamp` | `localtimestamp` | BR-8.2, BR-11.2 | Время сервера. |
 | payment.`status` | `'в_обработке'` | BR-8.2 | Начальный статус попытки. |
 | review.`review_timestamp` | `localtimestamp` | BR-9.3, BR-11.2 | Время сервера. |
-
-`generated` не используется. Столбцы `commission` и `total_amount` сделаны обычными полями с проверками `ck_order_commission` и `ck_order_total`, а не вычисляемыми `GENERATED ... STORED`. ERD и BR-7.10 описывают их как поля заказа, а тестовые данные и приложение передают значения явно. Если значения не сходятся, `CHECK` сообщает об этом ошибкой, а не молча пересчитывает данные.
-
-Гарантия при этом та же, что дало бы `GENERATED`: рассогласованные `order_amount`, комиссия и итог в базу попасть не могут. Сам `order_amount` сделать вычисляемым нельзя в принципе, потому что это сумма по другой таблице, `order_structure`.
 
 ## Нормализация (3НФ)
 
@@ -209,7 +207,6 @@
 | review | См. особые случаи ниже. |
 
 1. Рейтинги `restaurant.rating` и `product.rating` - осознанная денормализация. Значение можно вывести из таблицы `review`, но BR-9.6 прямо требует хранить агрегированный рейтинг и пересчитывать его автоматически. Согласованность обеспечивает триггер `trg_review_rating_change`, вызывающий `rating_change()` при INSERT, UPDATE и DELETE (BR-9.7, FOOD-105). Если отзывов нет, рейтинг равен `NULL`. У заказа агрегированного рейтинга нет (BR-9.6).
-2. `"order".commission` и `total_amount` зависят от `order_amount`, то есть это транзитивная зависимость. Но BR-7.10 требует хранить все три значения, а `CHECK` не дает им разойтись. Пересчитать `order_amount` задним числом нельзя: в `order_structure` нет цены на момент заказа, а `product.price` со временем меняется. Поэтому `order_amount` является зафиксированным фактом, а не дублем.
-3. `payment.amount` повторяет `"order".total_amount`. Это не избыточность, а прямое требование BR-8.4. Расхождение исключено составным внешним ключом `fk_payment_order_amount`.
-4. `"order".pay_status` - сводка по таблице `payment` (BR-7.8, BR-8.7). Ее поддерживает триггер `trg_payment_sync_order_pay_status`.
-5. `review.entity_id` вместе с `entity_type` - полиморфная ссылка (BR-9.1). Это сознательное решение, причины описаны в ловушке 4.
+2. `payment.amount` повторяет `"order".total_amount`. Это не избыточность, а прямое требование BR-8.4. Расхождение исключено составным внешним ключом `fk_payment_order_amount`.
+3. `"order".pay_status` - сводка по таблице `payment` (BR-7.8, BR-8.7). Ее поддерживает триггер `trg_payment_sync_order_pay_status`.
+4. `review.entity_id` вместе с `entity_type` - полиморфная ссылка (BR-9.1). Это сознательное решение, причины описаны в ловушке 4.
