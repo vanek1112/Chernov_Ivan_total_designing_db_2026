@@ -78,7 +78,7 @@ begin
 		round((100 + random() * 2900)::numeric, 2), restaurant_ids[(i - 1) % value + 1],
 		case 
 			when random() < 0.5 then null 
-			else 'https://img.example.com/' || md5(random()::text) || '.jpg' 
+			else 'https://cdn.foodexpress.ru/img/' || md5(random()::text) || '.jpg' 
 		end,
 		(array['доступно', 'нет_в_наличии', 'архив'])[1 + floor(random() * 3)::int]::chernov_food.product_status,
 		left(repeat(md5(random()::text), 7), 1 + floor(random() * 200)::int)
@@ -173,7 +173,7 @@ begin
 		left(repeat(md5(random()::text), 7), 1 + floor(random() * 200)::int),
 		case 
 			when random() < 0.5 then null
-			else 'https://img.example.com/' || md5(random()::text) || '.jpg'
+			else 'https://cdn.foodexpress.ru/img/' || md5(random()::text) || '.jpg'
 		end,
 		1 + floor(random() * 5)::int
 	from (
